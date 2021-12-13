@@ -1,0 +1,923 @@
+<!--
+   index.html
+   
+   Copyright 2016 miguel <miguel@Pc1>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+-->
+
+<!DOCTYPE html>
+
+<head>
+	<title>Batalla Naval</title>
+	<meta name="generator" content="Geany 1.24.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./rsc/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./rsc/css/estilo.css">
+    <script src="./rsc/js/jquery-3.3.1.min.js"></script>
+    <script src="./rsc/js/bootstrap.min.js"></script>
+    
+    <meta charset="UTF-8">
+    <script>
+        $(document).ready(function(){
+            //CREACION DEL TABLERO DE JUEGO
+            tablero=new Array();
+            disparos=new Array();
+            for(i=0;i<9;i++){
+                tablero[i]=new Array();
+                disparos[i]=new Array();
+                for(j=0;j<8;j++){
+                    //tablero[i]=new Array();
+                    tablero[i][j]=0;
+                    disparos[i][j]=0;
+                }
+            }
+            aud=new Audio()
+            aud.src = './rsc/snd/battle.mp3';
+            aud.preload=true
+            aud.loop=true
+            aud.play()
+            avisoTurno=new Audio();
+            avisoTurno.src = './rsc/snd/enter.mp3';
+            avisoTurno.preload=true;
+            explosion=new Audio();
+            explosion.src = './rsc/snd/explosion1.mp3';
+            explosion.preload=true;
+            disparo=new Audio();
+            disparo.src = './rsc/snd/disparo.mp3';
+            disparo.preload=true;
+            
+            tc=new Image();
+            tc.src="./rsc/img/ex1.png";
+            ag=new Image();
+            ag.src="./rsc/img/ex2.png";
+            nPieza=5;
+            flota=Array(0,0,0,0,0,0);
+            flo=0;
+            posB=0;
+            /*OJO CAMBIAR TURNO A FALSE Y MODO A 0*/
+            turno=false;
+            modo=0;//0 splash, 1 config, 2 mapa, 3 radar
+            ac=0;
+            dsF=99;
+            dsC=99;
+            w=null;
+            function socket(){
+                ws = new WebSocket("ws://"+location.host+":2706");
+                ws.onopen = function(){
+                };
+                ws.onmessage = function (e){ 
+                    tk=e.data.substring(0,2);
+                    ms=e.data.substring(3,e.data.length);
+                    
+                    if(tk==="01"){
+                        $("#menModal").text("Esperando al Oponente");
+                        $("#titModal").text("Modo Espera");
+                        $("#modHeader").removeClass("alert-danger");
+                        $("#modHeader").addClass("alert-info");
+                        $("#modalBtn").hide();
+                        $("#modal").show();
+                    }
+                    if(tk==="02"){
+                        $("#modal").hide();
+                        $("#splash").hide();
+                        $("#config").show("slow");
+                        modo=1;
+                    }
+                    if(tk==="03"){
+                        
+                    }
+                    if(tk==="04"){
+                        $("#config").hide();
+                        $("#juego").show('slow');
+                        $("#modal").hide();
+                        if(turno){
+                            $(".radar").show();
+                            $(".mapa").hide();
+                            $("#b5").hide();
+                            $("#b4").hide();
+                            $("#b3").hide();
+                            $("#b2").hide();
+                            modo=3;
+                        }else{
+                            $(".mapa").show();
+                            $(".radar").hide();
+                            $("#b5").show();
+                            $("#b4").show();
+                            $("#b3").show();
+                            $("#b2").show();
+                            modo=2;
+                        }
+                        
+                    }
+                    if(tk==="05"){
+                        $("#modal").hide();
+                        $("#menModal").text("Esperando al Oponente");
+                        $("#titModal").text("Modo Espera");
+                        $("#modHeader").removeClass("alert-danger");
+                        $("#modHeader").addClass("alert-info");
+                        $("#modalBtn").hide();
+                        $("#modal").show("slow");
+                        turno=true;
+                    }
+                    if(tk==="06"){
+                        turno=true;
+                        cd=ms.split("-");
+                        f=cd[0];
+                        c=cd[1];
+                        
+                        if(tablero[f][c]==0){
+                            //$("#"+f+"-"+c+"-m").css("backgroundColor","blue");
+                            var tocado = document.createElement("img");
+                            tocado.src=ag.src;
+                            tocado.setAttribute("width",$("#"+cd[0]+"-"+cd[1]+"-m")[0].offsetWidth)
+                            tocado.setAttribute("height",$("#"+cd[0]+"-"+cd[1]+"-m")[0].offsetHeight)
+                            tocado.style.position="absolute";
+                            tocado.style.zIndex="350";
+                            tocado.style.top=$("#"+cd[0]+"-"+cd[1]+"-m")[0].offsetTop+"px"
+                            tocado.style.left=$("#"+cd[0]+"-"+cd[1]+"-m")[0].offsetLeft+"px";
+                            $("#"+cd[0]+"-"+cd[1]+"-m").append(tocado);
+                            ws.send("04.f-"+ms)
+                        }else{
+                            p=tablero[f][c];
+                            flota[p]++;
+                            //$("#"+f+"-"+c+"-m").css("backgroundColor","yellow");
+                            var tocado = document.createElement("img");
+                            tocado.src=tc.src;
+                            tocado.setAttribute("width",$("#"+cd[0]+"-"+cd[1]+"-m")[0].offsetWidth)
+                            tocado.setAttribute("height",$("#"+cd[0]+"-"+cd[1]+"-m")[0].offsetHeight)
+                            tocado.style.position="absolute"
+                            tocado.style.zIndex="350";
+                            tocado.style.top=$("#"+cd[0]+"-"+cd[1]+"-m")[0].offsetTop+"px"
+                            tocado.style.left=$("#"+cd[0]+"-"+cd[1]+"-m")[0].offsetLeft+"px";
+                            $("#"+cd[0]+"-"+cd[1]+"-m").append(tocado);
+                            explosion.play();
+                            if(flota[p]==(p+1))
+                                ws.send("04.a-"+ms+"-1");
+                            else
+                                ws.send("04.a-"+ms+"-0");
+                        }
+                        
+                    }
+                    if(tk==="07"){
+                        cd=ms.split("-");
+                        if(cd[0]=="a"){
+                            //$("#"+cd[1]+"-"+cd[2]+"-r").css("backgroundColor","yellow");
+                            var tocado = document.createElement("img");
+                            tocado.src=tc.src;
+                            tocado.setAttribute("width",$("#"+cd[1]+"-"+cd[2]+"-r")[0].offsetWidth)
+                            tocado.setAttribute("height",$("#"+cd[1]+"-"+cd[2]+"-r")[0].offsetHeight)
+                            tocado.style.position="absolute"
+                            tocado.style.zIndex="350";
+                            tocado.style.top=$("#"+cd[1]+"-"+cd[2]+"-r")[0].offsetTop+"px"
+                            tocado.style.left=$("#"+cd[1]+"-"+cd[2]+"-r")[0].offsetLeft+"px";
+                            $("#"+cd[1]+"-"+cd[2]+"-r").append(tocado);
+                            explosion.play();
+                            if(cd[3]==1){
+                                $("#txt").text("ACERTASTE Y LO HUNDISTE!!!!");
+                            }else{
+                                $("#txt").text("ACERTASTE!!!!");
+                            }
+                            $("#mensaje").show().fadeIn();
+                            ac++
+                            if(ac==14){
+                                ws.send("06.XXX");
+                                $("#txt").text("GANASTE LA PARTIDA");
+                                $("#mensaje").show("slow");
+                                setTimeout(function(){
+                                    $("#mensaje").hide().fadeOut();
+                                    ws.close();
+                                    reset();
+                                },2000)
+                            }
+                        }else{
+                            //$("#"+cd[1]+"-"+cd[2]+"-r").css("backgroundColor","blue");
+                            var tocado = document.createElement("img");
+                            tocado.src=ag.src;
+                            tocado.setAttribute("width",$("#"+cd[1]+"-"+cd[2]+"-r")[0].offsetWidth)
+                            tocado.setAttribute("height",$("#"+cd[1]+"-"+cd[2]+"-r")[0].offsetHeight)
+                            tocado.style.position="absolute"
+                            tocado.style.zIndex="350";
+                            tocado.style.top=$("#"+cd[1]+"-"+cd[2]+"-r")[0].offsetTop+"px"
+                            tocado.style.left=$("#"+cd[1]+"-"+cd[2]+"-r")[0].offsetLeft+"px";
+                            $("#"+cd[1]+"-"+cd[2]+"-r").append(tocado);
+                            $("#txt").text("FALLASTE!!!!");
+                            $("#mensaje").show().fadeIn();
+                        }
+                        
+                        
+                        setTimeout(function(){
+                            $("#mensaje").hide("slow");
+                            $(".radar").hide();
+                            $("#mr").hide();
+                            $("#disparo").hide();
+                            $(".mapa").show();
+                            $("#b5").show();
+                            $("#b4").show();
+                            $("#b3").show();
+                            $("#b2").show();
+                            modo=2;
+                            ws.send("05.XXX");
+                        },1500)
+                    }
+                    if(tk==="08"){
+                        setTimeout(function(){
+                            $("#mensaje").hide().fadeOut();
+                            $(".radar").show();
+                            $("#mr").show();
+                            $("#disparo").show();
+                            $(".mapa").hide();
+                            $("#b5").hide();
+                            $("#b4").hide();
+                            $("#b3").hide();
+                            $("#b2").hide();
+                            modo=3;
+                            avisoTurno.play()
+                        },1500)
+                    }
+                    if(tk==="09"){
+                        $("#txt").text("PERDISTE LA PARTIDA");
+                        $("#mensaje").show().fadeIn();
+                        setTimeout(function(){
+                            $("#mensaje").hide().fadeOut();
+                            ws.close();
+                            reset();
+                        },3000)
+                    }
+                    if(tk==="99"){
+                        ws.close();
+                        $("#menModal").text("El Oponente Abandono la Partida");
+                        $("#titModal").text("Error de Conexion");
+                        $("#modHeader").removeClass("alert-info");
+                        $("#modHeader").addClass("alert-danger");
+                        $("#modalBtn").show();
+                        $('#modal').show("slow");
+                        reset();
+                    }
+                }
+                ws.onerror=function(){
+                    $("#menModal").text("No se pudo establecer conexion con el servidor remoto");
+                    $("#titModal").text("Error de Conexion");
+                    $("#modHeader").removeClass("alert-info");
+                    $("#modHeader").addClass("alert-danger");
+                    $("#modalBtn").show();
+                    $('#modal').show("slow");
+                }
+                ws.onclose = function(){
+                    $("#menModal").text("No se pudo establecer conexion con el servidor remoto");
+                    $("#titModal").text("Cerrada la Conexion");
+                    $("#modHeader").removeClass("alert-info");
+                    $("#modHeader").addClass("alert-danger");
+                    $("#modalBtn").show();
+                    $('#modal').show("slow");
+                };
+                return ws;
+            }
+            function reset(){
+                location.href="./";
+            }
+            $("#modalBtn").click(function(){
+                $("#modal").hide("slow");
+            })
+            $("#conectar").click(function(){
+                aud.play();
+                avisoTurno.play();
+                avisoTurno.pause();
+                disparo.play();
+                disparo.pause();
+                explosion.play();
+                explosion.pause();
+                w=socket();
+            });
+            $("#batalla").click(function(){
+                if(flo==4){
+                    w.send("02.Listo");
+                }else{
+                    $("#menModal").text("Debe completar su flota de 4 Barcos");
+                    $("#titModal").text("Flota Incompleta");
+                    $("#modHeader").removeClass("alert-info");
+                    $("#modHeader").addClass("alert-danger");
+                    $("#modalBtn").show();
+                    $("#modal").show("slow");
+                }
+            })
+            function enviar(){
+                ms=document.getElementById("txt").value
+                w.send(ms);
+            }
+            function cerrar(){
+                //w.send("0:-:")
+                w.close()
+            }
+            //DIRECCION DEL BARCO 0 VERTICAL, 1 HORIZONTAL
+            $("#dirBar").click(function(){
+                if(posB==1){
+                    posB=0;
+                }else{
+                    posB=1;
+                }
+                $(this).text(posB);
+            })
+            //POSICION DEL BARCO EN EL TABLERO
+            $(".celda").click(function(ev){
+                var puede=false;
+                c=$(this).attr('id').split("-");
+                fl=parseInt(c[0]);
+                cl=parseInt(c[1]);
+                
+                if(modo==1 && nPieza>1){
+                    if(tablero[fl][cl]==0){
+                        if(flota[nPieza]==1){
+                            return
+                        }
+                        if(posB==0){
+                            if(fl+nPieza<10){
+                                for(i=0;i<nPieza;i++){
+                                    if(tablero[fl+i][cl]!=0){
+                                        puede=false;
+                                        break;
+                                    }else{
+                                        puede=true;
+                                    }
+                                }
+                                if(puede){
+                                    for(i=0;i<nPieza;i++){
+                                        tablero[fl+i][cl]=nPieza;
+                                        $("#"+(fl+i)+"-"+cl).css("backgroundColor","red")
+                                    }
+                                    flota[nPieza]=1;
+                                    ubicaBarco(this);
+                                }
+                            }
+                        }else{
+                            if(cl+nPieza<9){
+                                for(i=0;i<nPieza;i++){
+                                    if(tablero[fl][cl+i]!=0){
+                                        puede=false;
+                                        break;
+                                    }else{
+                                        puede=true;
+                                    }
+                                }
+                                if(puede){
+                                    for(i=0;i<nPieza;i++){
+                                        tablero[fl][cl+i]=nPieza;
+                                        $("#"+(fl)+"-"+(cl+i)).css("backgroundColor","red")
+                                    }
+                                    flota[nPieza]=1;
+                                }
+                                ubicaBarco(this);
+                            }
+                        }
+                        
+                    }
+                }
+                if(modo==3){
+                    if(turno){
+                        if(disparos[fl][cl]==0){
+                            if(dsC==99 && dsF==99){
+                                dsC=cl;
+                                dsF=fl;
+                                //$(this).css("backgroundColor","green");
+                                $("#mr").show();
+                                $("#mr").css("top",($(this)[0].offsetTop)+"px");
+                                $("#mr").css("left",($(this)[0].offsetLeft)+"px");
+                                
+                            }else{
+                                //$("#"+dsF+"-"+dsC+"-r").css("backgroundColor","white");
+                                disparos[dsF][dsC]=0;
+                                dsC=cl;
+                                dsF=fl;
+                                //$(this).css("backgroundColor","green");
+                                $("#mr").show();
+                                $("#mr").css("top",($(this)[0].offsetTop)+"px");
+                                $("#mr").css("left",($(this)[0].offsetLeft)+"px");
+                                
+                            }
+                            
+                        }
+                    }
+                }
+            });
+            function ubicaBarco(t){
+                flo++;
+                if(posB==0){
+                    if(nPieza==5){
+                        $("#b5").css("-webkit-transform","rotate(90deg)");
+                        $("#b5").attr("width",($(t)[0].offsetHeight*(nPieza))+"px");
+                        $("#b5").attr("height",($(t)[0].offsetHeight)+"px");
+                        $("#b5").css("top",($(t)[0].offsetTop)+($(t)[0].offsetHeight*2)+"px");
+                        $("#b5").css("left",($(t)[0].offsetLeft)-($(t)[0].offsetHeight*2)+"px");
+                        $("#b5").show();
+                    }
+                    if(nPieza==4){
+                        $("#b4").css("-webkit-transform","rotate(90deg)");
+                        $("#b4").attr("width",($(t)[0].offsetHeight*(nPieza))+"px");
+                        $("#b4").attr("height",($(t)[0].offsetHeight)+"px");
+                        $("#b4").css("top",($(t)[0].offsetTop)+($(t)[0].offsetHeight*1.5)+"px");
+                        $("#b4").css("left",($(t)[0].offsetLeft)-($(t)[0].offsetHeight*1.5)+"px");
+                        $("#b4").show();
+                    }
+                    if(nPieza==3){
+                        $("#b3").css("-webkit-transform","rotate(90deg)");
+                        $("#b3").attr("width",($(t)[0].offsetHeight*(nPieza))+"px");
+                        $("#b3").attr("height",($(t)[0].offsetHeight)+"px");
+                        $("#b3").css("top",($(t)[0].offsetTop)+($(t)[0].offsetHeight*1)+"px");
+                        $("#b3").css("left",($(t)[0].offsetLeft)-($(t)[0].offsetHeight*1)+"px");
+                        $("#b3").show();
+                    }
+                    if(nPieza==2){
+                        $("#b2").css("-webkit-transform","rotate(90deg)");
+                        $("#b2").attr("width",($(t)[0].offsetHeight*(nPieza))+"px");
+                        $("#b2").attr("height",($(t)[0].offsetHeight)+"px");
+                        $("#b2").css("top",($(t)[0].offsetTop)+($(t)[0].offsetHeight*0.5)+"px");
+                        $("#b2").css("left",($(t)[0].offsetLeft)-($(t)[0].offsetHeight*0.5)+"px");
+                        $("#b2").show();
+                    }
+                }else{
+                    $("#b"+nPieza).css("-webkit-transform","rotate(0deg)");
+                    $("#b"+nPieza).attr("width",($(t)[0].offsetWidth*nPieza)+"px");
+                    $("#b"+nPieza).attr("height",($(t)[0].offsetHeight)+"px");
+                    $("#b"+nPieza).css("top",($(t)[0].offsetTop)+"px");
+                    $("#b"+nPieza).css("left",($(t)[0].offsetLeft)+"px");
+                    $("#b"+nPieza).show();
+                }
+                nPieza--;
+                $("#nBar").text(nPieza);
+                if(nPieza==4){
+                    $("#tipo").text("Destructor");
+                }
+                if(nPieza==3){
+                    $("#tipo").text("Fragata");
+                }
+                if(nPieza==2){
+                    $("#tipo").text("Tanquero");
+                }
+
+            }
+            $(".barco").click(function(){
+                if(modo==1){
+                    $(this).hide();
+                    flo--;
+                    if($(this).attr("id")==="b5"){
+                        p=5;
+                        flota[p]=5;
+                    }
+                    if($(this).attr("id")==="b4"){
+                        p=4;
+                        flota[p]=4;
+                    }
+                    if($(this).attr("id")==="b3"){
+                        p=3;
+                        flota[p]=3;
+                    }
+                    if($(this).attr("id")==="b2"){
+                        p=2;
+                        flota[p]=2;
+                    }
+                    for(i=0;i<9;i++){
+                        for(j=0;j<8;j++){
+                            if(tablero[i][j]==p){
+                                tablero[i][j]=0;
+                                $("#"+(i)+"-"+(j)).css("backgroundColor","white")
+                            }
+                        }
+                    }
+                }
+                nPieza=p;
+                $("#nBar").text(nPieza);
+                if(nPieza==5){
+                    $("#tipo").text("PortaAviones");
+                }
+                if(nPieza==4){
+                    $("#tipo").text("Destructor");
+                }
+                if(nPieza==3){
+                    $("#tipo").text("Fragata");
+                }
+                if(nPieza==2){
+                    $("#tipo").text("Tanquero");
+                }
+            });
+            $("#disparo").click(function(){
+                if(turno){
+                    if(dsF!=99 && dsC!=99){
+                        w.send("03."+dsF+"-"+dsC);
+                        disparos[dsF][dsC]=1;
+                        dsF=99;
+                        dsC=99;
+                        turno=false;
+                        disparo.play();
+                    }
+                }
+            });
+            v=setInterval(estatus, 1000)
+            function estatus(){
+                if(w!=null){
+                //alert(aud.currentTime)
+                    switch(w.readyState){
+                        case 1:
+                            //console.log("conectado")
+                            document.getElementById("centinela").style.backgroundColor="green"
+                            break
+                        case 0:
+                            //console.log("conectando")
+                            document.getElementById("centinela").style.backgroundColor="yellow"
+                            break
+                        case 3:
+                            //console.log("se juee")
+                            document.getElementById("centinela").style.backgroundColor="red"
+                    }
+                }
+            }
+        });
+        
+    </script>
+    <style>
+        
+    </style>
+</head>
+<body >
+        
+        <div id="splash" class="w-100 h-100">
+            <img src="./rsc/img/titulo.png" class="img-fluid"/>
+            <button class="btnEntrar boton" id="conectar">Jugar</button>
+        </div>
+        <div id="config" class="w-100 h-100">
+            <table class="">
+                <tr class="consola">
+                    <td><p id="nBar">5</p></td>
+                    <td colspan="5"><p id="tipo">PortaAviones</p></td>
+                    <td><button id="dirBar">0</button></td>
+                    <td colspan="2"><button id="batalla">Listo</button></td>
+                </tr>
+                <tr>
+                    <td class="head"></td>
+                    <td class="head">A</td>
+                    <td class="head">B</td>
+                    <td class="head">C</td>
+                    <td class="head">D</td>
+                    <td class="head">E</td>
+                    <td class="head">F</td>
+                    <td class="head">G</td>
+                    <td class="head">H</td>
+                </tr>
+                <tr>
+                    <td class="head">1</td>
+                    <td class="celda mar" id="0-0">  </td>
+                    <td class="celda mar" id="0-1">  </td>
+                    <td class="celda mar" id="0-2">  </td>
+                    <td class="celda mar" id="0-3">  </td>
+                    <td class="celda mar" id="0-4">  </td>
+                    <td class="celda mar" id="0-5">  </td>
+                    <td class="celda mar" id="0-6">  </td>
+                    <td class="celda mar" id="0-7">  </td>
+                </tr>
+                <tr>
+                    <td class="head">2</td>
+                    <td class="celda mar" id="1-0">  </td>
+                    <td class="celda mar" id="1-1">  </td>
+                    <td class="celda mar" id="1-2">  </td>
+                    <td class="celda mar" id="1-3">  </td>
+                    <td class="celda mar" id="1-4">  </td>
+                    <td class="celda mar" id="1-5">  </td>
+                    <td class="celda mar" id="1-6">  </td>
+                    <td class="celda mar" id="1-7">  </td>
+                </tr>
+                <tr>
+                    <td class="head">3</td>
+                    <td class="celda mar" id="2-0">  </td>
+                    <td class="celda mar" id="2-1">  </td>
+                    <td class="celda mar" id="2-2">  </td>
+                    <td class="celda mar" id="2-3">  </td>
+                    <td class="celda mar" id="2-4">  </td>
+                    <td class="celda mar" id="2-5">  </td>
+                    <td class="celda mar" id="2-6">  </td>
+                    <td class="celda mar" id="2-7">  </td>
+                </tr>
+                <tr>
+                    <td class="head">4</td>
+                    <td class="celda mar" id="3-0">  </td>
+                    <td class="celda mar" id="3-1">  </td>
+                    <td class="celda mar" id="3-2">  </td>
+                    <td class="celda mar" id="3-3">  </td>
+                    <td class="celda mar" id="3-4">  </td>
+                    <td class="celda mar" id="3-5">  </td>
+                    <td class="celda mar" id="3-6">  </td>
+                    <td class="celda mar" id="3-7">  </td>
+                </tr>
+                <tr>
+                    <td class="head">5</td>
+                    <td class="celda mar" id="4-0">  </td>
+                    <td class="celda mar" id="4-1">  </td>
+                    <td class="celda mar" id="4-2">  </td>
+                    <td class="celda mar" id="4-3">  </td>
+                    <td class="celda mar" id="4-4">  </td>
+                    <td class="celda mar" id="4-5">  </td>
+                    <td class="celda mar" id="4-6">  </td>
+                    <td class="celda mar" id="4-7">  </td>
+                </tr>
+                <tr>
+                    <td class="head">6</td>
+                    <td class="celda mar" id="5-0">  </td>
+                    <td class="celda mar" id="5-1">  </td>
+                    <td class="celda mar" id="5-2">  </td>
+                    <td class="celda mar" id="5-3">  </td>
+                    <td class="celda mar" id="5-4">  </td>
+                    <td class="celda mar" id="5-5">  </td>
+                    <td class="celda mar" id="5-6">  </td>
+                    <td class="celda mar" id="5-7">  </td>
+                </tr>
+                <tr>
+                    <td class="head">7</td>
+                    <td class="celda mar" id="6-0">  </td>
+                    <td class="celda mar" id="6-1">  </td>
+                    <td class="celda mar" id="6-2">  </td>
+                    <td class="celda mar" id="6-3">  </td>
+                    <td class="celda mar" id="6-4">  </td>
+                    <td class="celda mar" id="6-5">  </td>
+                    <td class="celda mar" id="6-6">  </td>
+                    <td class="celda mar" id="6-7">  </td>
+                </tr>
+                <tr>
+                    <td class="head">8</td>
+                    <td class="celda mar" id="7-0">  </td>
+                    <td class="celda mar" id="7-1">  </td>
+                    <td class="celda mar" id="7-2">  </td>
+                    <td class="celda mar" id="7-3">  </td>
+                    <td class="celda mar" id="7-4">  </td>
+                    <td class="celda mar" id="7-5">  </td>
+                    <td class="celda mar" id="7-6">  </td>
+                    <td class="celda mar" id="7-7">  </td>
+                </tr>
+                <tr>
+                    <td class="head">9</td>
+                    <td class="celda mar" id="8-0">  </td>
+                    <td class="celda mar" id="8-1">  </td>
+                    <td class="celda mar" id="8-2">  </td>
+                    <td class="celda mar" id="8-3">  </td>
+                    <td class="celda mar" id="8-4">  </td>
+                    <td class="celda mar" id="8-5">  </td>
+                    <td class="celda mar" id="8-6">  </td>
+                    <td class="celda mar" id="8-7">  </td>
+                </tr>
+            </table>
+        </div>
+        <div id="juego" class="w-100 h-100">
+            <table class="" id="radar">
+                <tr>
+                    <td colspan="7"><p id="mensaje"><span id="txt"></span></p></td>
+                    <td colspan="2"><button id="disparo">Fuego</button></td>
+                </tr>
+                <tr>
+                    <td class="head"></td>
+                    <td class="head">A</td>
+                    <td class="head">B</td>
+                    <td class="head">C</td>
+                    <td class="head">D</td>
+                    <td class="head">E</td>
+                    <td class="head">F</td>
+                    <td class="head">G</td>
+                    <td class="head">H</td>
+                </tr>
+                <tr class="radar">
+                    <td class="head">1</td>
+                    <td class="celda panel" id="0-0-r">  </td>
+                    <td class="celda panel" id="0-1-r">  </td>
+                    <td class="celda panel" id="0-2-r">  </td>
+                    <td class="celda panel" id="0-3-r">  </td>
+                    <td class="celda panel" id="0-4-r">  </td>
+                    <td class="celda panel" id="0-5-r">  </td>
+                    <td class="celda panel" id="0-6-r">  </td>
+                    <td class="celda panel" id="0-7-r">  </td>
+                </tr>
+                <tr class="radar">
+                    <td class="head">2</td>
+                    <td class="celda panel" id="1-0-r">  </td>
+                    <td class="celda panel" id="1-1-r">  </td>
+                    <td class="celda panel" id="1-2-r">  </td>
+                    <td class="celda panel" id="1-3-r">  </td>
+                    <td class="celda panel" id="1-4-r">  </td>
+                    <td class="celda panel" id="1-5-r">  </td>
+                    <td class="celda panel" id="1-6-r">  </td>
+                    <td class="celda panel" id="1-7-r">  </td>
+                </tr>
+                <tr class="radar">
+                    <td class="head">3</td>
+                    <td class="celda panel" id="2-0-r">  </td>
+                    <td class="celda panel" id="2-1-r">  </td>
+                    <td class="celda panel" id="2-2-r">  </td>
+                    <td class="celda panel" id="2-3-r">  </td>
+                    <td class="celda panel" id="2-4-r">  </td>
+                    <td class="celda panel" id="2-5-r">  </td>
+                    <td class="celda panel" id="2-6-r">  </td>
+                    <td class="celda panel" id="2-7-r">  </td>
+                </tr>
+                <tr class="radar">
+                    <td class="head">4</td>
+                    <td class="celda panel" id="3-0-r">  </td>
+                    <td class="celda panel" id="3-1-r">  </td>
+                    <td class="celda panel" id="3-2-r">  </td>
+                    <td class="celda panel" id="3-3-r">  </td>
+                    <td class="celda panel" id="3-4-r">  </td>
+                    <td class="celda panel" id="3-5-r">  </td>
+                    <td class="celda panel" id="3-6-r">  </td>
+                    <td class="celda panel" id="3-7-r">  </td>
+                </tr>
+                <tr class="radar">
+                    <td class="head">5</td>
+                    <td class="celda panel" id="4-0-r">  </td>
+                    <td class="celda panel" id="4-1-r">  </td>
+                    <td class="celda panel" id="4-2-r">  </td>
+                    <td class="celda panel" id="4-3-r">  </td>
+                    <td class="celda panel" id="4-4-r">  </td>
+                    <td class="celda panel" id="4-5-r">  </td>
+                    <td class="celda panel" id="4-6-r">  </td>
+                    <td class="celda panel" id="4-7-r">  </td>
+                </tr>
+                <tr class="radar">
+                    <td class="head">6</td>
+                    <td class="celda panel" id="5-0-r">  </td>
+                    <td class="celda panel" id="5-1-r">  </td>
+                    <td class="celda panel" id="5-2-r">  </td>
+                    <td class="celda panel" id="5-3-r">  </td>
+                    <td class="celda panel" id="5-4-r">  </td>
+                    <td class="celda panel" id="5-5-r">  </td>
+                    <td class="celda panel" id="5-6-r">  </td>
+                    <td class="celda panel" id="5-7-r">  </td>
+                </tr>
+                <tr class="radar">
+                    <td class="head">7</td>
+                    <td class="celda panel" id="6-0-r">  </td>
+                    <td class="celda panel" id="6-1-r">  </td>
+                    <td class="celda panel" id="6-2-r">  </td>
+                    <td class="celda panel" id="6-3-r">  </td>
+                    <td class="celda panel" id="6-4-r">  </td>
+                    <td class="celda panel" id="6-5-r">  </td>
+                    <td class="celda panel" id="6-6-r">  </td>
+                    <td class="celda panel" id="6-7-r">  </td>
+                </tr>
+                <tr class="radar">
+                    <td class="head">8</td>
+                    <td class="celda panel" id="7-0-r">  </td>
+                    <td class="celda panel" id="7-1-r">  </td>
+                    <td class="celda panel" id="7-2-r">  </td>
+                    <td class="celda panel" id="7-3-r">  </td>
+                    <td class="celda panel" id="7-4-r">  </td>
+                    <td class="celda panel" id="7-5-r">  </td>
+                    <td class="celda panel" id="7-6-r">  </td>
+                    <td class="celda panel" id="7-7-r">  </td>
+                </tr>
+                <tr class="radar">
+                    <td class="head">9</td>
+                    <td class="celda panel" id="8-0-r">  </td>
+                    <td class="celda panel" id="8-1-r">  </td>
+                    <td class="celda panel" id="8-2-r">  </td>
+                    <td class="celda panel" id="8-3-r">  </td>
+                    <td class="celda panel" id="8-4-r">  </td>
+                    <td class="celda panel" id="8-5-r">  </td>
+                    <td class="celda panel" id="8-6-r">  </td>
+                    <td class="celda panel" id="8-7-r">  </td>
+                </tr>
+                <!--el mapa de los barcos-->
+                <tr class="mapa">
+                    <td class="head">1</td>
+                    <td class="celda mar" id="0-0-m">  </td>
+                    <td class="celda mar" id="0-1-m">  </td>
+                    <td class="celda mar" id="0-2-m">  </td>
+                    <td class="celda mar" id="0-3-m">  </td>
+                    <td class="celda mar" id="0-4-m">  </td>
+                    <td class="celda mar" id="0-5-m">  </td>
+                    <td class="celda mar" id="0-6-m">  </td>
+                    <td class="celda mar" id="0-7-m">  </td>
+                </tr>
+                <tr class="mapa">
+                    <td class="head">2</td>
+                    <td class="celda mar" id="1-0-m">  </td>
+                    <td class="celda mar" id="1-1-m">  </td>
+                    <td class="celda mar" id="1-2-m">  </td>
+                    <td class="celda mar" id="1-3-m">  </td>
+                    <td class="celda mar" id="1-4-m">  </td>
+                    <td class="celda mar" id="1-5-m">  </td>
+                    <td class="celda mar" id="1-6-m">  </td>
+                    <td class="celda mar" id="1-7-m">  </td>
+                </tr>
+                <tr class="mapa">
+                    <td class="head">3</td>
+                    <td class="celda mar" id="2-0-m">  </td>
+                    <td class="celda mar" id="2-1-m">  </td>
+                    <td class="celda mar" id="2-2-m">  </td>
+                    <td class="celda mar" id="2-3-m">  </td>
+                    <td class="celda mar" id="2-4-m">  </td>
+                    <td class="celda mar" id="2-5-m">  </td>
+                    <td class="celda mar" id="2-6-m">  </td>
+                    <td class="celda mar" id="2-7-m">  </td>
+                </tr>
+                <tr class="mapa">
+                    <td class="head">4</td>
+                    <td class="celda mar" id="3-0-m">  </td>
+                    <td class="celda mar" id="3-1-m">  </td>
+                    <td class="celda mar" id="3-2-m">  </td>
+                    <td class="celda mar" id="3-3-m">  </td>
+                    <td class="celda mar" id="3-4-m">  </td>
+                    <td class="celda mar" id="3-5-m">  </td>
+                    <td class="celda mar" id="3-6-m">  </td>
+                    <td class="celda mar" id="3-7-m">  </td>
+                </tr>
+                <tr class="mapa">
+                    <td class="head">5</td>
+                    <td class="celda mar" id="4-0-m">  </td>
+                    <td class="celda mar" id="4-1-m">  </td>
+                    <td class="celda mar" id="4-2-m">  </td>
+                    <td class="celda mar" id="4-3-m">  </td>
+                    <td class="celda mar" id="4-4-m">  </td>
+                    <td class="celda mar" id="4-5-m">  </td>
+                    <td class="celda mar" id="4-6-m">  </td>
+                    <td class="celda mar" id="4-7-m">  </td>
+                </tr>
+                <tr class="mapa">
+                    <td class="head">6</td>
+                    <td class="celda mar" id="5-0-m">  </td>
+                    <td class="celda mar" id="5-1-m">  </td>
+                    <td class="celda mar" id="5-2-m">  </td>
+                    <td class="celda mar" id="5-3-m">  </td>
+                    <td class="celda mar" id="5-4-m">  </td>
+                    <td class="celda mar" id="5-5-m">  </td>
+                    <td class="celda mar" id="5-6-m">  </td>
+                    <td class="celda mar" id="5-7-m">  </td>
+                </tr>
+                <tr class="mapa">
+                    <td class="head">7</td>
+                    <td class="celda mar" id="6-0-m">  </td>
+                    <td class="celda mar" id="6-1-m">  </td>
+                    <td class="celda mar" id="6-2-m">  </td>
+                    <td class="celda mar" id="6-3-m">  </td>
+                    <td class="celda mar" id="6-4-m">  </td>
+                    <td class="celda mar" id="6-5-m">  </td>
+                    <td class="celda mar" id="6-6-m">  </td>
+                    <td class="celda mar" id="6-7-m">  </td>
+                </tr>
+                <tr class="mapa">
+                    <td class="head">8</td>
+                    <td class="celda mar" id="7-0-m">  </td>
+                    <td class="celda mar" id="7-1-m">  </td>
+                    <td class="celda mar" id="7-2-m">  </td>
+                    <td class="celda mar" id="7-3-m">  </td>
+                    <td class="celda mar" id="7-4-m">  </td>
+                    <td class="celda mar" id="7-5-m">  </td>
+                    <td class="celda mar" id="7-6-m">  </td>
+                    <td class="celda mar" id="7-7-m">  </td>
+                </tr>
+                <tr class="mapa">
+                    <td class="head">9</td>
+                    <td class="celda mar" id="8-0-m">  </td>
+                    <td class="celda mar" id="8-1-m">  </td>
+                    <td class="celda mar" id="8-2-m">  </td>
+                    <td class="celda mar" id="8-3-m">  </td>
+                    <td class="celda mar" id="8-4-m">  </td>
+                    <td class="celda mar" id="8-5-m">  </td>
+                    <td class="celda mar" id="8-6-m">  </td>
+                    <td class="celda mar" id="8-7-m">  </td>
+                </tr>
+            
+            </table>
+        </div>
+        <img src="rsc/img/b1.png" id="b5" class="barco" style="display:none;position:absolute;z-index:300;top:50px"/>
+        <img src="rsc/img/b2.png" id="b4" class="barco" style="display:none;position:absolute;z-index:301;top:50px"/>
+        <img src="rsc/img/b3.png" id="b3" class="barco" style="display:none;position:absolute;z-index:302;top:50px"/>
+        <img src="rsc/img/b4.png" id="b2" class="barco" style="display:none;position:absolute;z-index:303;top:50px"/>
+        <img src="rsc/img/mira.png" id="mr" class="barco" style="display:none;position:absolute;z-index:304;top:50px"/>
+        <!--MODAL-->
+        <div class="modal" id="modal">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header alert-danger" id="modHeader">
+                <h4 class="modal-title" id="titModal"></h4>
+              </div>
+              <div class="modal-body">
+                <p id="menModal"></p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal" id="modalBtn">Aceptar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+	<div id="centinela" style="width:10px;height:10px"></div>
+</body>
+
+</html>

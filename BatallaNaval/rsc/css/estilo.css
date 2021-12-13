@@ -1,0 +1,39 @@
+body{margin:0;padding:0;overflow:hidden}
+table td{border:1px solid black;width:48px;height:48px}
+#splash {background: url(../img/splash.jpg) center center no-repeat fixed;background-size:100% 100%;position:absolute;border:1px solid;text-align:center;display:block;}
+#splash .btnEntrar{position: absolute;top: 50%; left: 50%;transform: translate(-50%, -50%);border:none;}
+#config {position:absolute;text-align:center;display:none;        }
+#config table{background:url(../img/agua.jpg);}
+#config .mar{border:2px solid #ADD8E6}
+#config .head{background-color:#0C0C68;text-align:center;color:#10CCD5;font-weight:bolder}
+#config .consola{background-color:#000000;color:#04CF2C}
+#modal{display:none;}
+#juego{position:absolute;display:none}
+#radar{display:block}
+#radar .panel{background-color:black;border-color:#04D126}
+#radar .head{background-color:#0C0C68;text-align:center;color:#10CCD5;font-weight:bolder}
+#juego .mapa{display:none;background:url(../img/agua.jpg);}
+#juego .mar{border:2px solid #ADD8E6}
+#mensaje{display:none;background-color:black;color:yellow}
+
+        
+        .boton{
+            background: #3498db;
+            background-image: -webkit-linear-gradient(top, #3498db, #f7f7f7);
+            background-image: -moz-linear-gradient(top, #3498db, #f7f7f7);
+            background-image: -ms-linear-gradient(top, #3498db, #f7f7f7);
+            background-image: -o-linear-gradient(top, #3498db, #f7f7f7);
+            background-image: linear-gradient(to bottom, #3498db, #f7f7f7);
+            -webkit-border-radius: 28;
+            -moz-border-radius: 28;
+            border-radius: 28px;
+            -webkit-box-shadow: 0px 1px 3px #1b25f2;
+            -moz-box-shadow: 0px 1px 3px #1b25f2;
+            box-shadow: 0px 1px 3px #1b25f2;
+            font-family: Georgia;
+            color: #080e1c;
+            font-size: 32px;
+            padding: 10px 20px 10px 20px;
+            border: solid #f0e354 2px;
+            text-decoration: none;
+        }
